@@ -9,35 +9,33 @@ Bus::Bus(CPU &cpu_ref, int interval, bool verb)
 {
 }
 
-void Bus::clock() {
-    // 1. Verificar interrupção externa
-    if (interrupt_flag) {
+void Bus::clock()
+{
+    if (interrupt_flag)
+    {
         handle_interrupt();
         interrupt_flag = false;
         return;
     }
-    
-    // 2. Buscar instrução
+
     uint32_t instruction = cpu.read32(cpu.pc);
-
-    // // DEBUG: Mostrar instrução sendo executada
-    // std::cout << "Instrucao em PC=" << std::hex << cpu.pc
-    // << ": 0x" << instruction << std::dec << std::endl;
-
-    // 3. Executar instrução
     Instructions::execute(cpu, instruction);
-    
-    // 4. Incrementar contador
     instructions_executed++;
-    
-    // 5. Verificar se é hora de mostrar VRAM
-    if (instructions_executed % vram_interval == 0) {
+
+    if (vram_interval > 0 && (instructions_executed % vram_interval) == 0)
+    {
         show_vram_ascii();
     }
 }
 
-void Bus::trigger_interrupt() {
-    interrupt_flag = true;
+void Bus::trigger_interrupt()
+{
+    if (interrupt_flag)
+        return; // evita repetição da interrupção
+
+    interrupt_flag = true; // <-- AGORA FUNCIONA
+
+    std::cout << "[INTERRUPÇÃO] Disparada...\n";
 }
 
 void Bus::handle_interrupt() {
@@ -56,11 +54,11 @@ void Bus::show_vram_ascii() {
     std::cout << "\n=== VRAM (ASCII) - Instrucao " << instructions_executed << " ===" << std::endl;
     
     int chars_per_line = 64;
-    int lines_to_show = 10; // Mostrar apenas 10 linhas
+    int lines_to_show = 3; // Mostrar apenas 10 linhas
     int char_count = 0;
     int lines_count = 0;
 
-    for (uint32_t addr = CPU::VRAM_START; addr <= CPU::VRAM_END 
+    for (uint32_t addr = Memory::VRAM_START; addr <= Memory::VRAM_END 
         && lines_count < lines_to_show; addr++) {
         uint8_t value = cpu.read8(addr);
         
@@ -88,7 +86,7 @@ void Bus::show_vram_ascii() {
 
 uint32_t Bus::read(uint32_t addr) {
     // Se for I/O mapeado, tratar aqui
-    if (addr >= CPU::IO_START && addr <= CPU::IO_END) {
+    if (addr >= Memory::IO_START && addr <= Memory::IO_END) {
         return read_io(addr);
     }
     return cpu.read32(addr);
@@ -96,7 +94,7 @@ uint32_t Bus::read(uint32_t addr) {
 
 void Bus::write(uint32_t addr, uint32_t value) {
     // Se for I/O mapeado, tratar aqui
-    if (addr >= CPU::IO_START && addr <= CPU::IO_END) {
+    if (addr >= Memory::IO_START && addr <= Memory::IO_END) {
         write_io(addr, value & 0xFF);
         return;
     }

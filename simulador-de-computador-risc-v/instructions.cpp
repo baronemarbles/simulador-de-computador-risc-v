@@ -18,10 +18,10 @@ void Instructions::execute(CPU &cpu, uint32_t instruction)
             SLLI(cpu, instruction);
             break;
         case 0x2: // SLTI
-            // Implementar
+            SLTI(cpu, instruction);
             break;
         case 0x3: // SLTIU
-            // Implementar
+            SLTIU(cpu, instruction);
             break;
         case 0x4:
             XORI(cpu, instruction);
@@ -54,10 +54,10 @@ void Instructions::execute(CPU &cpu, uint32_t instruction)
             SLL(cpu, instruction);
             break;
         case 0x2: // SLT
-            // Implementar
+            SLT(cpu, instruction);
             break;
         case 0x3: // SLTU
-            // Implementar
+            SLTU(cpu, instruction);
             break;
         case 0x4:
             XOR(cpu, instruction);
@@ -78,13 +78,39 @@ void Instructions::execute(CPU &cpu, uint32_t instruction)
         break;
 
     case 0x03: // LOAD
-        if (funct3 == 0x2)
+        switch (funct3)
+        {
+        case 0x0:
+            LB(cpu, instruction);
+            break;
+        case 0x1:
+            LH(cpu, instruction);
+            break;
+        case 0x2:
             LW(cpu, instruction);
+            break;
+        case 0x4:
+            LBU(cpu, instruction);
+            break;
+        case 0x5:
+            LHU(cpu, instruction);
+            break;
+        }
         break;
 
     case 0x23: // STORE
-        if (funct3 == 0x2)
+        switch (funct3)
+        {
+        case 0x0:
+            SB(cpu, instruction);
+            break;
+        case 0x1:
+            SH(cpu, instruction);
+            break;
+        case 0x2:
             SW(cpu, instruction);
+            break;
+        }
         break;
 
     case 0x63: // BRANCH
@@ -199,7 +225,7 @@ void Instructions::SRLI(CPU &cpu, uint32_t i)
     uint8_t rd = (i >> 7) & 0x1F;   // Destination Register
     uint8_t rs1 = (i >> 15) & 0x1F; // Source Register1
     int32_t shamt = (i >> 20) & 0x1F;
-    // Shift aritmético à direita
+    // Shift lógico à direita
 
     uint32_t result = cpu.reg[rs1] >> shamt;
 
@@ -214,7 +240,7 @@ void Instructions::SRA(CPU &cpu, uint32_t i)
     uint8_t rs1 = (i >> 15) & 0x1F; // Source Register1
     uint8_t rs2 = (i >> 20) & 0x1F; // Source Register2
     uint8_t shamt = cpu.reg[rs2] & 0x1F;
-    // Shift aritmético à direita (preserva sinal)
+    // Shift lógico à direita (preserva sinal)
 
     int32_t s = (int32_t)cpu.reg[rs1];
     uint32_t result = s >> shamt;
@@ -229,7 +255,7 @@ void Instructions::SRAI(CPU &cpu, uint32_t i)
     uint8_t rd = (i >> 7) & 0x1F;     // Destination Register
     uint8_t rs1 = (i >> 15) & 0x1F;   // Source Register1
     uint8_t shamt = (i >> 20) & 0x1F; // Source Register2
-    // Shift aritmético à direita (preserva sinal)
+    // Shift lógico à direita (preserva sinal)
 
     int32_t s = (int32_t)cpu.reg[rs1];
     uint32_t result = s >> shamt;
@@ -328,6 +354,77 @@ void Instructions::AUIPC(CPU &cpu, uint32_t i)
     {
         cpu.reg[rd] = cpu.pc + imm;
     }
+
+    cpu.pc += 4;
+}
+//--------------------------------------------------------
+
+//========================================================
+//---------------------COMPARAÇÃO-------------------------
+//========================================================
+void Instructions::SLT(CPU &cpu, uint32_t i)
+{
+    uint8_t rd = (i >> 7) & 0x1F;
+    uint8_t rs1 = (i >> 15) & 0x1F;
+    uint8_t rs2 = (i >> 20) & 0x1F;
+
+    int32_t s1 = (int32_t)cpu.reg[rs1];
+    int32_t s2 = (int32_t)cpu.reg[rs2];
+
+    uint32_t result = (s1 < s2) ? 1u : 0u;
+
+    if (rd != 0)
+        cpu.reg[rd] = result;
+
+    cpu.pc += 4;
+}
+
+void Instructions::SLTI(CPU &cpu, uint32_t i)
+{
+    uint8_t rd = (i >> 7) & 0x1F;
+    uint8_t rs1 = (i >> 15) & 0x1F;
+    int32_t imm = sext12((i >> 20) & 0xFFF); // imediato com sinal
+
+    int32_t s1 = (int32_t)cpu.reg[rs1];
+
+    uint32_t result = (s1 < imm) ? 1u : 0u;
+
+    if (rd != 0)
+        cpu.reg[rd] = result;
+
+    cpu.pc += 4;
+}
+
+void Instructions::SLTU(CPU &cpu, uint32_t i)
+{
+    uint8_t rd = (i >> 7) & 0x1F;
+    uint8_t rs1 = (i >> 15) & 0x1F;
+    uint8_t rs2 = (i >> 20) & 0x1F;
+
+    uint32_t u1 = cpu.reg[rs1];
+    uint32_t u2 = cpu.reg[rs2];
+
+    uint32_t result = (u1 < u2) ? 1u : 0u;
+
+    if (rd != 0)
+        cpu.reg[rd] = result;
+
+    cpu.pc += 4;
+}
+
+void Instructions::SLTIU(CPU &cpu, uint32_t i)
+{
+    uint8_t rd = (i >> 7) & 0x1F;
+    uint8_t rs1 = (i >> 15) & 0x1F;
+    int32_t imm_sext = sext12((i >> 20) & 0xFFF);
+
+    uint32_t u1 = cpu.reg[rs1];
+    uint32_t uimm = (uint32_t)imm_sext; // RISC-V compara como unsigned
+
+    uint32_t result = (u1 < uimm) ? 1u : 0u;
+
+    if (rd != 0)
+        cpu.reg[rd] = result;
 
     cpu.pc += 4;
 }
@@ -470,26 +567,6 @@ void Instructions::BNE(CPU &cpu, uint32_t i)
     }
 }
 
-void Instructions::BLT(CPU &cpu, uint32_t i)
-{
-    uint8_t rd = (i >> 7) & 0x1F;    // Destination Register
-    uint8_t rs1 = (i >> 15) & 0x1F;  // Source Register1
-    int32_t imm = (i >> 20) & 0xFFF; // Immediate
-}
-//Decoder do branch tipo B
-int32_t decode_branch_offset(uint32_t i) {
-    int32_t imm = ((i >> 31) & 0x1)  << 12 | // Bit 12 (Sinal)
-                  ((i >> 7)  & 0x1)  << 11 | // Bit 11
-                  ((i >> 25) & 0x3F) << 5  | // Bits 10:5
-                  ((i >> 8)  & 0xF)  << 1;   // Bits 4:1
-    
-    // Extensão de sinal (se o bit 12 for 1, preenche o resto com 1s)
-    if (imm & 0x1000) {
-        imm |= 0xFFFFE000;
-    }
-    return imm;
-}
-
 void Instructions::BLT(CPU &cpu, uint32_t i) {
     uint8_t rs1 = (i >> 15) & 0x1F;
     uint8_t rs2 = (i >> 20) & 0x1F;
@@ -612,6 +689,66 @@ void Instructions::LW(CPU &cpu, uint32_t instr)
     cpu.pc += 4;
 }
 
+void Instructions::LB(CPU &cpu, uint32_t instr)
+{
+    uint8_t rd = (instr >> 7) & 0x1F;
+    uint8_t rs1 = (instr >> 15) & 0x1F;
+    int32_t imm = sext12((instr >> 20) & 0xFFF);
+
+    uint32_t addr = cpu.reg[rs1] + imm;
+    int8_t value = (int8_t)cpu.read8(addr); // extensão de sinal
+
+    if (rd != 0)
+        cpu.reg[rd] = (int32_t)value;
+
+    cpu.pc += 4;
+}
+
+void Instructions::LBU(CPU &cpu, uint32_t instr)
+{
+    uint8_t rd = (instr >> 7) & 0x1F;
+    uint8_t rs1 = (instr >> 15) & 0x1F;
+    int32_t imm = sext12((instr >> 20) & 0xFFF);
+
+    uint32_t addr = cpu.reg[rs1] + imm;
+    uint8_t value = cpu.read8(addr);
+
+    if (rd != 0)
+        cpu.reg[rd] = value;
+
+    cpu.pc += 4;
+}
+
+void Instructions::LH(CPU &cpu, uint32_t instr)
+{
+    uint8_t rd = (instr >> 7) & 0x1F;
+    uint8_t rs1 = (instr >> 15) & 0x1F;
+    int32_t imm = sext12((instr >> 20) & 0xFFF);
+
+    uint32_t addr = cpu.reg[rs1] + imm;
+    int16_t value = (int16_t)cpu.read16(addr);
+
+    if (rd != 0)
+        cpu.reg[rd] = (int32_t)value;
+
+    cpu.pc += 4;
+}
+
+void Instructions::LHU(CPU &cpu, uint32_t instr)
+{
+    uint8_t rd = (instr >> 7) & 0x1F;
+    uint8_t rs1 = (instr >> 15) & 0x1F;
+    int32_t imm = sext12((instr >> 20) & 0xFFF);
+
+    uint32_t addr = cpu.reg[rs1] + imm;
+    uint16_t value = cpu.read16(addr);
+
+    if (rd != 0)
+        cpu.reg[rd] = value;
+
+    cpu.pc += 4;
+}
+
 // STORE WORD
 void Instructions::SW(CPU &cpu, uint32_t instr)
 {
@@ -638,6 +775,36 @@ void Instructions::SW(CPU &cpu, uint32_t instr)
     cpu.pc += 4;
 }
 
+void Instructions::SB(CPU &cpu, uint32_t instr)
+{
+    uint8_t rs1 = (instr >> 15) & 0x1F;
+    uint8_t rs2 = (instr >> 20) & 0x1F;
+
+    int32_t imm = ((instr >> 7) & 0x1F) |
+                  ((instr >> 25) << 5);
+    imm = sext12(imm);
+
+    uint32_t addr = cpu.reg[rs1] + imm;
+    cpu.write8(addr, cpu.reg[rs2] & 0xFF);
+
+    cpu.pc += 4;
+}
+
+void Instructions::SH(CPU &cpu, uint32_t instr)
+{
+    uint8_t rs1 = (instr >> 15) & 0x1F;
+    uint8_t rs2 = (instr >> 20) & 0x1F;
+
+    int32_t imm = ((instr >> 7) & 0x1F) |
+                  ((instr >> 25) << 5);
+    imm = sext12(imm);
+
+    uint32_t addr = cpu.reg[rs1] + imm;
+    cpu.write16(addr, cpu.reg[rs2] & 0xFFFF);
+
+    cpu.pc += 4;
+}
+
 void Instructions::ECALL(CPU &cpu, uint32_t i)
 {
     (void)i;
@@ -648,4 +815,5 @@ void Instructions::EBREAK(CPU &cpu, uint32_t i)
 {
     (void)i;
     cpu.running = false;
+    cpu.pc += 4;
 }

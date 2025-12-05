@@ -8,10 +8,11 @@
 class Bus {
 private:
     CPU& cpu;
-    bool interrupt_flag;
+    bool interrupt_flag = false;
     uint32_t instructions_executed;
     int vram_interval;
     bool verbose;
+    bool interrupt_fired = false;
 
 public:
     Bus(CPU& cpu_ref, int interval = 100, bool verbose = false);
