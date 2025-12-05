@@ -96,7 +96,18 @@ void Instructions::execute(CPU &cpu, uint32_t instruction)
         case 0x1:
             BNE(cpu, instruction);
             break;
-            // Implementar outros branches
+        case 0x4:
+            BLT(cpu, instruction);
+            break;
+        case 0x5:
+            BGE(cpu, instruction);
+            break;
+        case 0x6:
+            BLTU(cpu, instruction);
+            break;
+        case 0x7:
+            BGEU(cpu, instruction);
+            break;
         }
         break;
 
@@ -464,6 +475,69 @@ void Instructions::BLT(CPU &cpu, uint32_t i)
     uint8_t rd = (i >> 7) & 0x1F;    // Destination Register
     uint8_t rs1 = (i >> 15) & 0x1F;  // Source Register1
     int32_t imm = (i >> 20) & 0xFFF; // Immediate
+}
+//Decoder do branch tipo B
+int32_t decode_branch_offset(uint32_t i) {
+    int32_t imm = ((i >> 31) & 0x1)  << 12 | // Bit 12 (Sinal)
+                  ((i >> 7)  & 0x1)  << 11 | // Bit 11
+                  ((i >> 25) & 0x3F) << 5  | // Bits 10:5
+                  ((i >> 8)  & 0xF)  << 1;   // Bits 4:1
+    
+    // Extensão de sinal (se o bit 12 for 1, preenche o resto com 1s)
+    if (imm & 0x1000) {
+        imm |= 0xFFFFE000;
+    }
+    return imm;
+}
+
+void Instructions::BLT(CPU &cpu, uint32_t i) {
+    uint8_t rs1 = (i >> 15) & 0x1F;
+    uint8_t rs2 = (i >> 20) & 0x1F;
+    int32_t imm = decode_branch_offset(i);
+
+    // Casting para 32 bits para garantir a comparação com negativos ou positivos
+    if ((int32_t)cpu.reg[rs1] < (int32_t)cpu.reg[rs2]) {
+        cpu.pc += imm;
+    } else {
+        cpu.pc += 4;
+    }
+}
+
+void Instructions::BGE(CPU &cpu, uint32_t i) {
+    uint8_t rs1 = (i >> 15) & 0x1F;
+    uint8_t rs2 = (i >> 20) & 0x1F;
+    int32_t imm = decode_branch_offset(i);
+
+    if ((int32_t)cpu.reg[rs1] >= (int32_t)cpu.reg[rs2]) {
+        cpu.pc += imm;
+    } else {
+        cpu.pc += 4;
+    }
+}
+
+void Instructions::BLTU(CPU &cpu, uint32_t instr) {
+    uint8_t rs1 = (instr >> 15) & 0x1F;
+    uint8_t rs2 = (instr >> 20) & 0x1F;
+    int32_t imm = decode_branch_offset(instr);
+
+    if (cpu.reg[rs1] < cpu.reg[rs2]) {
+        cpu.pc += imm;
+    } else {
+        cpu.pc += 4;
+    }
+}
+
+void Instructions::BGEU(CPU &cpu, uint32_t i) {
+    uint8_t rs1 = (i >> 15) & 0x1F;
+    uint8_t rs2 = (i >> 20) & 0x1F;
+    int32_t imm = decode_branch_offset(i);
+
+    // Sem cast (uint32_t) para comparação SEM SINAL
+    if (cpu.reg[rs1] >= cpu.reg[rs2]) {
+        cpu.pc += imm;
+    } else {
+        cpu.pc += 4;
+    }
 }
 //--------------------------------------------------------
 
