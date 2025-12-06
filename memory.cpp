@@ -29,7 +29,7 @@ uint8_t Memory::read8(uint32_t addr) const
         return data[addr];
     }
 
-    // Reservado ou IO: por enquanto, CPU lê como 0
+    // Reservado ou IO: CPU lê como 0
     return 0;
 }
 
