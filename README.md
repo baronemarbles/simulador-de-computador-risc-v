@@ -78,19 +78,19 @@ Este projeto implementa um simulador simplificado de uma CPU RISC-V 32 bits (RV3
 A arquitetura simulada é composta pelos seguintes módulos principais:
 
 - **CPU (`cpu.h` / `cpu.cpp`)**  
-  Implementa os 32 registradores de propósito geral (`x0`–`x31`), o contador de programa (`pc`) e funções de contexto para interrupções. Também encapsula o acesso à memória por meio de métodos como `read32` e `write32`. :contentReference[oaicite:0]{index=0}  
+  Implementa os 32 registradores de propósito geral (`x0`–`x31`), o contador de programa (`pc`) e funções de contexto para interrupções. Também encapsula o acesso à memória por meio de métodos como `read32` e `write32`.   
 
 - **Memory (`memory.h` / `memory.cpp`)**  
-  Modela uma RAM de 640 KB com regiões distintas para RAM principal, VRAM, área reservada e I/O mapeado em memória. Toda leitura/escrita da CPU passa por este módulo. :contentReference[oaicite:1]{index=1}  
+  Modela uma RAM de 640 KB com regiões distintas para RAM principal, VRAM, área reservada e I/O mapeado em memória. Toda leitura/escrita da CPU passa por este módulo.
 
 - **Bus (`bus.h` / `bus.cpp`)**  
-  É o “cérebro do ciclo”: a cada `clock()` ele busca a instrução na memória usando o `pc` da CPU, chama o decodificador de instruções e contabiliza o número de instruções executadas. Também oferece suporte a interrupções e exibição da VRAM em modo ASCII. :contentReference[oaicite:2]{index=2}  
+  É o “cérebro do ciclo”: a cada `clock()` ele busca a instrução na memória usando o `pc` da CPU, chama o decodificador de instruções e contabiliza o número de instruções executadas. Também oferece suporte a interrupções e exibição da VRAM em modo ASCII.
 
 - **Instructions (`instructions.h` / `instructions.cpp`)**  
-  Implementa o decodificador e a lógica de execução das instruções RV32I suportadas. A função estática `Instructions::execute` recebe a instrução bruta (32 bits), decodifica opcode/funct3/funct7 e despacha para a função correta (ADDI, LW, BEQ, JAL, etc.). :contentReference[oaicite:3]{index=3}  
+  Implementa o decodificador e a lógica de execução das instruções RV32I suportadas. A função estática `Instructions::execute` recebe a instrução bruta (32 bits), decodifica opcode/funct3/funct7 e despacha para a função correta (ADDI, LW, BEQ, JAL, etc.).  
 
 - **Programa de exemplo (`main.cpp`)**  
-  Carrega um pequeno programa em memória que escreve os caracteres `HELLO` na VRAM usando instruções RISC-V e finaliza com `EBREAK`. :contentReference[oaicite:4]{index=4}  
+  Carrega um pequeno programa em memória que escreve os caracteres `HELLO` na VRAM usando instruções RISC-V e finaliza com `EBREAK`.  
 
 ---
 
